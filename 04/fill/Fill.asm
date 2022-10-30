@@ -12,3 +12,28 @@
 // the screen should remain fully clear as long as no key is pressed.
 
 // Put your code here.
+
+// put the @screen pointer into @pixel register
+@SCREEN
+D=A
+@pixel
+M=D
+
+(LOOP)
+	// set the register in pixel to -1
+	@pixel
+	A=M
+	M=-1
+
+	// next pixel
+	@pixel
+	M=M+1
+
+	@LOOP
+	0;JMP
+@END
+0;JMP
+(END)
+@END
+0;JMP
+
