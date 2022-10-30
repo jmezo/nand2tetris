@@ -13,12 +13,6 @@
 
 // Put your code here.
 
-// set keyboard register to @KEYBOARD
-@24576
-D=A
-@KEYBOARD
-M=D
-
 // put the @screen pointer into @pixel register
 @SCREEN
 D=A
@@ -27,14 +21,13 @@ M=D
 
 (checkKeyboard)
 // put value of keyboard into D
-@KEYBOARD
-A=M
+@24576
 D=M
 // if key is pressed start blackening screen
 @blackScreen
 D;JNE
-// check keyboard again
-@checkKeyboard
+// else start whitening screen
+@whiteScreen
 0;JMP
 
 (blackScreen)
@@ -42,7 +35,15 @@ D;JNE
 	@pixel
 	A=M
 	M=-1
-	// next pixel
+
+	// if @pixel is at the last pixel, jump back to @checkKeyboard
+	@pixel
+	D=M
+	@24576 // last register
+	D=A-D
+	@checkKeyboard
+	D;JLE
+	// else next pixel
 	@pixel
 	M=M+1
 	// go back to keyboard check
@@ -54,16 +55,18 @@ D;JNE
 	@pixel
 	A=M
 	M=0
-	// previous pixel
+
+	// if @pixel is at the first pixel, jump back to @checkKeyboard
+	@pixel
+	D=M
+	@SCREEN
+	D=D-A
+	@checkKeyboard
+	D;JLE
+
+	// else set to previous pixel
 	@pixel
 	M=M-1
 	// go back to keyboard check
 	@checkKeyboard
 	0;JMP
-
-@END
-0;JMP
-(END)
-@END
-0;JMP
-
