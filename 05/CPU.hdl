@@ -44,7 +44,7 @@ CHIP CPU {
 
 		// if i = 0, then load to ARegister
 		Mux16(a=instruction, b=ALUout, sel=instruction[15], out=regAin);
-		// if i instruction is 0 xor d1 instruction is 1 then load incoming data to reg a
+		// if i instruction is 0 or d1 instruction is 1 then load incoming data to reg a
 		Not(in=instruction[15], out=Ainstr);
 		Not(in=Ainstr, out=notAinstr);
 		Or(a=instruction[5], b=Ainstr, out=regAload);
