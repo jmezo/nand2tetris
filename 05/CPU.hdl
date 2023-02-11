@@ -39,5 +39,83 @@ CHIP CPU {
         pc[15];          // address of next instruction
 
     PARTS:
+		// instruction: ixxaccccccdddjjj
     // Put your code here:
+
+		// if i = 0, then load to ARegister
+		Mux16(a=instruction, b=ALUout, sel=instruction[15], out=regAin);
+		// if i instruction is 0 xor d1 instruction is 1 then load incoming data to reg a
+		Not(in=instruction[15], out=Ainstr);
+		Not(in=Ainstr, out=notAinstr);
+		Or(a=instruction[5], b=Ainstr, out=regAload);
+		ARegister(in=regAin, load=regAload, out=regAout, out[0..14]=addressM);
+
+		// if d2 instruction is 1 then load incoming data to reg d
+		And(a=notAinstr, b=instruction[4], out=regDload);
+		DRegister(in=ALUout, load=regDload, out=ALUx);
+
+		// if not a instruction and d3 instruction is 1 then load result to memory
+		And(a=notAinstr, b=instruction[3], out=writeM);
+
+		// if a = 0, then use A register, else use inM
+		Mux16(a=regAout, b=inM, sel=instruction[12], out=ALUy);
+		ALU(x=ALUx, y=ALUy, zx=instruction[11], nx=instruction[10], zy=instruction[9], ny=instruction[8], f=instruction[7], no=instruction[6], out=ALUout, out=outM, zr=zrOut, ng=ngOut);
+
+
+
+		// jumps
+		Or(a=zrOut, b=ngOut, out=notZero);
+		Not(in=notZero, out=gzOut); // gzOut - greater than zero
+
+		Not(in=ngOut, out=notNg); // not negative
+		Not(in=zrOut, out=notZr); // not zero
+		Or(a=zrOut, b=ngOut, out=leOut); // less than or equal to zero
+
+		//no jump
+		Not(in=instruction[2], out=nj1);
+		Not(in=instruction[1], out=nj2);
+		Not(in=instruction[0], out=nj3);
+		And(a=nj1, b=nj2, out=nj1nj2);
+		And(a=nj1nj2, b=nj3, out=noJump);
+
+		// JGT jump if out > 0
+		And(a=nj1nj2, b=instruction[0], out=JGT);
+
+		// JEQ jump if out = 0
+		And(a=nj1, b=nj3, out=nj1nj3);
+		And(a=nj1nj3, b=instruction[1], out=JEQ);
+
+		// JGE jump if out >= 0
+		And(a=instruction[1], b=instruction[0], out=j2j3);
+		And(a=nj1, b=j2j3, out=JGE);
+
+		// JLT jump if out < 0
+		And(a=nj2, b=nj3, out=nj2nj3);
+		And(a=nj2nj3, b=instruction[2], out=JLT);
+
+		// JNE jump if out != 0
+		And(a=instruction[2], b=instruction[0], out=j1j3);
+		And(a=nj2, b=j1j3, out=JNE);
+
+		// JLE jump if out <= 0
+		And(a=instruction[2], b=instruction[1], out=j1j2);
+		And(a=nj3, b=j1j2, out=JLE);
+
+
+		// JMP jump
+		And(a=j1j2, b=instruction[0], out=JMP);
+
+		And(a=gzOut, b=JGT, out=JGTtrue);
+		And(a=zrOut, b=JEQ, out=JEQtrue);
+		And(a=notNg, b=JGE, out=JGEtrue);
+		And(a=ngOut, b=JLT, out=JLTtrue);
+		And(a=notZr, b=JNE, out=JNEtrue);
+		And(a=leOut, b=JLE, out=JLEtrue);
+
+		Not(in=noJump, out=noJumpFalse);
+		Or8Way(in[0]=JGTtrue, in[1]=JEQtrue, in[2]=JGEtrue, in[3]=JLTtrue, in[4]=JNEtrue, in[5]=JLEtrue, in[6]=JMP, in[7]=noJumpFalse, out=jump1);
+		And(a=jump1, b=notAinstr, out=jump);
+
+		Not(in=jump, out=notJump);
+		PC(in=regAout, load=jump, inc=notJump, reset=reset, out[0..14]=pc);
 }
