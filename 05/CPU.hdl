@@ -71,12 +71,11 @@ CHIP CPU {
 		Not(in=zrOut, out=notZr); // not zero
 		Or(a=zrOut, b=ngOut, out=leOut); // less than or equal to zero
 
-		//no jump
+		// check for jump instructions
 		Not(in=instruction[2], out=nj1);
 		Not(in=instruction[1], out=nj2);
 		Not(in=instruction[0], out=nj3);
 		And(a=nj1, b=nj2, out=nj1nj2);
-		And(a=nj1nj2, b=nj3, out=noJump);
 
 		// JGT jump if out > 0
 		And(a=nj1nj2, b=instruction[0], out=JGT);
@@ -112,8 +111,7 @@ CHIP CPU {
 		And(a=notZr, b=JNE, out=JNEtrue);
 		And(a=leOut, b=JLE, out=JLEtrue);
 
-		Not(in=noJump, out=noJumpFalse);
-		Or8Way(in[0]=JGTtrue, in[1]=JEQtrue, in[2]=JGEtrue, in[3]=JLTtrue, in[4]=JNEtrue, in[5]=JLEtrue, in[6]=JMP, in[7]=noJumpFalse, out=jump1);
+		Or8Way(in[0]=JGTtrue, in[1]=JEQtrue, in[2]=JGEtrue, in[3]=JLTtrue, in[4]=JNEtrue, in[5]=JLEtrue, in[6]=JMP, out=jump1);
 		And(a=jump1, b=notAinstr, out=jump);
 
 		Not(in=jump, out=notJump);
