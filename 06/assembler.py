@@ -5,6 +5,54 @@ A_COMMAND = "A_COMMAND"
 C_COMMAND = "C_COMMAND"
 L_COMMAND = "L_COMMAND"
 
+
+class SymbolTable:
+    def __init__(self):
+        self.table = {
+            "SP": 0,
+            "LCL": 1,
+            "ARG": 2,
+            "THIS": 3,
+            "THAT": 4,
+            "R0": 0,
+            "R1": 1,
+            "R2": 2,
+            "R3": 3,
+            "R4": 4,
+            "R5": 5,
+            "R6": 6,
+            "R7": 7,
+            "R8": 8,
+            "R9": 9,
+            "R10": 10,
+            "R11": 11,
+            "R12": 12,
+            "R13": 13,
+            "R14": 14,
+            "R15": 15,
+            "SCREEN": 16384,
+            "KBD": 24576,
+        }
+        self.next_address = 16
+
+    def add_entry(self, symbol, address):
+        self.table[symbol] = address
+
+    def contains(self, symbol):
+        return symbol in self.table
+
+    def get_address(self, symbol):
+        return self.table[symbol]
+
+    def get_add_address(self, symbol):
+        if self.contains(symbol):
+            return self.get_address(symbol)
+        else:
+            symbol_address = self.next_address
+            self.add_entry(symbol, symbol_address)
+            self.next_address += 1
+            return symbol_address
+
 def hasMoreCommands(line: str):
     return line != ""
 
@@ -137,14 +185,31 @@ def jump_code(jump: str) -> str:
             }
     return jumpMap[jump]
 
+def first_pass(f: typing.IO, symbolTable: SymbolTable):
+    line = advance(f)
+    line = stripLine(line)
+    address = 0
+    while hasMoreCommands(line):
+        if commandType(line) == L_COMMAND:
+            symbolTable.add_entry(symbol(line), address)
+        else:
+            address += 1
+        line = advance(f)
+        line = stripLine(line)
+
 def main():
     # get args
     args = sys.argv[1:]
     bin_commands = []
     file_name_with_ext = args[0]
     file_name = file_name_with_ext.split(".")[0]
+    symbolTable = SymbolTable()
+
 
     with open(file_name_with_ext, 'r') as f:
+        first_pass(f, symbolTable)
+        f.seek(0)
+
         while True:
             nstr = advance(f)
             if not hasMoreCommands(nstr):
@@ -152,11 +217,18 @@ def main():
             nstr = stripLine(nstr)
             if nstr == "":
                 continue
-            cmdTzpe = commandType(nstr)
-            if cmdTzpe == A_COMMAND:
-                bin_cmd = "{0:016b}".format(int(nstr[1:]))
-                bin_commands.append(bin_cmd)
-            elif cmdTzpe == C_COMMAND:
+            cmdType = commandType(nstr)
+            if cmdType == A_COMMAND:
+                # TODO the bug is probably here
+                a = nstr[1:]
+                if a.isdigit():
+                    a = int(a)
+                else:
+                    a = symbolTable.get_add_address(a)
+                bin_commands.append("0" + format(a, '015b'))
+                # bin_cmd = "{0:016b}".format(int(nstr[1:]))
+                # bin_commands.append(bin_cmd)
+            elif cmdType == C_COMMAND:
                 dst = dest(nstr)
                 dst_code = dest_code(dst)
                 cmp = comp(nstr)
@@ -166,7 +238,7 @@ def main():
                 # bin_cmd = "111" +  " " + cmp_code +  " " + dst_code +  " " + jmp_code
                 bin_cmd = "111" + cmp_code + dst_code + jmp_code
                 bin_commands.append(bin_cmd)
-            elif cmdTzpe == L_COMMAND:
+            elif cmdType == L_COMMAND:
                 print("L_COMMAND: " + nstr)
 
     for line in bin_commands:
