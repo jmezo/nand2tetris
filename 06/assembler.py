@@ -186,16 +186,18 @@ def jump_code(jump: str) -> str:
     return jumpMap[jump]
 
 def first_pass(f: typing.IO, symbolTable: SymbolTable):
-    line = advance(f)
-    line = stripLine(line)
     address = 0
-    while hasMoreCommands(line):
-        if commandType(line) == L_COMMAND:
-            symbolTable.add_entry(symbol(line), address)
+    while True:
+        nstr = advance(f)
+        if not hasMoreCommands(nstr):
+            break
+        nstr = stripLine(nstr)
+        if nstr == "":
+            continue
+        if commandType(nstr) == L_COMMAND:
+            symbolTable.add_entry(symbol(nstr[1:]), address)
         else:
             address += 1
-        line = advance(f)
-        line = stripLine(line)
 
 def main():
     # get args
@@ -219,15 +221,12 @@ def main():
                 continue
             cmdType = commandType(nstr)
             if cmdType == A_COMMAND:
-                # TODO the bug is probably here
                 a = nstr[1:]
                 if a.isdigit():
                     a = int(a)
                 else:
                     a = symbolTable.get_add_address(a)
                 bin_commands.append("0" + format(a, '015b'))
-                # bin_cmd = "{0:016b}".format(int(nstr[1:]))
-                # bin_commands.append(bin_cmd)
             elif cmdType == C_COMMAND:
                 dst = dest(nstr)
                 dst_code = dest_code(dst)
@@ -235,14 +234,11 @@ def main():
                 cmp_code = comp_code(cmp)
                 jmp = jump(nstr)
                 jmp_code = jump_code(jmp)
-                # bin_cmd = "111" +  " " + cmp_code +  " " + dst_code +  " " + jmp_code
                 bin_cmd = "111" + cmp_code + dst_code + jmp_code
                 bin_commands.append(bin_cmd)
             elif cmdType == L_COMMAND:
-                print("L_COMMAND: " + nstr)
+                continue
 
-    for line in bin_commands:
-        print(line)
     with open(file_name + ".hack", 'w') as f:
         for line in bin_commands:
             f.write("%s\n" % line)
