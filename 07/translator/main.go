@@ -23,6 +23,19 @@ const (
 	C_CALL       command = "C_CALL"
 )
 
+type segment string
+
+const (
+	argument segment = "argument"
+	local    segment = "local"
+	static   segment = "static"
+	constant segment = "constant"
+	this     segment = "this"
+	that     segment = "that"
+	pointer  segment = "pointer"
+	temp     segment = "temp"
+)
+
 func main() {
 	args := os.Args[1:]
 	fmt.Printf("args: %+v\n", args)
