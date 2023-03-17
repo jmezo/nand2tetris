@@ -98,3 +98,32 @@ func (p *parser) arg2(cmd command) string {
 		return ""
 	}
 }
+
+type codeWriter struct {
+	file       *os.File
+	vmFileName string
+}
+
+func newCodeWriter(fileName string) *codeWriter {
+	file, err := os.Create(fileName)
+	if err != nil {
+		log.Fatal(err)
+	}
+	return &codeWriter{file, ""}
+}
+
+func (c *codeWriter) setFileName(fileName string) {
+	c.vmFileName = fileName
+}
+
+func (c *codeWriter) writeArithmetic(cmd string) {
+	// TODO
+}
+
+func (c *codeWriter) writePushPop(cmd command, segment string, index int) {
+	// TODO
+}
+
+func (c *codeWriter) close() {
+	c.file.Close()
+}
