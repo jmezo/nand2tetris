@@ -68,12 +68,13 @@ func (p *parser) getLine() string {
 }
 
 func (p *parser) commandType() command {
-	cmd := p.scanner.Text()
-	if cmd[:3] == "add" {
+	fullCmd := p.scanner.Text()
+	cmd := fullCmd[:3]
+	if cmd == "add" || cmd == "sub" || cmd == "neg" || cmd == "eq" || cmd == "gt" || cmd == "lt" || cmd == "and" || cmd == "or" || cmd == "not" {
 		return C_ARITHMETIC
-	} else if cmd[:4] == "push" {
+	} else if fullCmd[:4] == "push" {
 		return C_PUSH
-	} else if cmd[:3] == "pop" {
+	} else if fullCmd[:3] == "pop" {
 		return C_POP
 	} else {
 		log.Fatal("not implemented")
