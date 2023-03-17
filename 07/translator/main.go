@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strconv"
 	"strings"
 )
 
@@ -26,13 +27,20 @@ func main() {
 	args := os.Args[1:]
 	fmt.Printf("args: %+v\n", args)
 	parser := newParser(args[0])
+	codeWriter := newCodeWriter("out.asm")
 	for parser.advance() {
 		cmd := parser.commandType()
 		line := parser.getLine()
 		arg1 := parser.arg1(cmd)
 		arg2 := parser.arg2(cmd)
-		fmt.Printf("line: %s - cmd: %s arg1: %s arg2: %s\n", line, cmd, arg1, arg2)
+		fmt.Printf("line: %s - cmd: %s arg1: %s arg2: %d\n", line, cmd, arg1, arg2)
+		if cmd == C_ARITHMETIC {
+			codeWriter.writeArithmetic(arg1)
+		} else {
+			codeWriter.writePushPop(cmd, arg1, arg2)
+		}
 	}
+	codeWriter.close()
 }
 
 type parser struct {
@@ -91,12 +99,17 @@ func (p *parser) arg1(cmd command) string {
 	}
 }
 
-func (p *parser) arg2(cmd command) string {
+func (p *parser) arg2(cmd command) int {
 	line := p.scanner.Text()
 	if cmd == C_PUSH || cmd == C_POP || cmd == C_FUNCTION || cmd == C_CALL {
-		return strings.Split(line, " ")[2]
+		argStr := strings.Split(line, " ")[2]
+		arg, err := strconv.Atoi(argStr)
+		if err != nil {
+			log.Fatalf("arg2: %s is not a number on line: %s", argStr, line)
+		}
+		return arg
 	} else {
-		return ""
+		return -1
 	}
 }
 
