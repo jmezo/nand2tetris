@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"os"
 	"strconv"
@@ -41,19 +42,41 @@ const (
 func main() {
 	args := os.Args[1:]
 	fmt.Printf("args: %+v\n", args)
-	parser := newParser(args[0])
-	codeWriter := newCodeWriter("out.asm")
+	filePath := args[0]
+	fileName := filePath
+	var parsers []*parser
+	// if filename has .vm extension, then it's a single file
+	if len(filePath) > 3 && filePath[len(filePath)-3:] == ".vm" {
+		fileName = filePath[:len(filePath)-3]
+		parsers = append(parsers, newParser(filePath))
+	} else {
+		files, err := ioutil.ReadDir(filePath)
+		if err != nil {
+			log.Fatal(err)
+		}
+		for _, file := range files {
+			if !file.IsDir() && strings.HasSuffix(file.Name(), ".vm") {
+				parsers = append(parsers, newParser(filePath+"/"+file.Name()))
+			}
+		}
+
+	}
+
+	codeWriter := newCodeWriter(fileName + ".asm")
 	codeWriter.initStack()
-	for parser.advance() {
-		cmd := parser.commandType()
-		line := parser.getLine()
-		arg1 := parser.arg1(cmd)
-		arg2 := parser.arg2(cmd)
-		fmt.Printf("line: %s - cmd: %s arg1: %s arg2: %d\n", line, cmd, arg1, arg2)
-		if cmd == C_ARITHMETIC {
-			codeWriter.writeArithmetic(arg1)
-		} else {
-			codeWriter.writePushPop(cmd, arg1, arg2)
+	for _, parser := range parsers {
+		for parser.advance() {
+			cmd := parser.commandType()
+			line := parser.getLine()
+			arg1 := parser.arg1(cmd)
+			arg2 := parser.arg2(cmd)
+			fmt.Printf("line: %s - cmd: %s arg1: %s arg2: %d\n",
+				line, cmd, arg1, arg2)
+			if cmd == C_ARITHMETIC {
+				codeWriter.writeArithmetic(arg1)
+			} else {
+				codeWriter.writePushPop(cmd, arg1, arg2)
+			}
 		}
 	}
 	codeWriter.close()
