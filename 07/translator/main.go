@@ -11,6 +11,8 @@ import (
 
 type command string
 
+const stackPointerDefault = 256
+
 const (
 	C_ARITHMETIC command = "C_ARITHMETIC"
 	C_PUSH       command = "C_PUSH"
@@ -41,6 +43,7 @@ func main() {
 	fmt.Printf("args: %+v\n", args)
 	parser := newParser(args[0])
 	codeWriter := newCodeWriter("out.asm")
+	codeWriter.initStack()
 	for parser.advance() {
 		cmd := parser.commandType()
 		line := parser.getLine()
@@ -129,6 +132,7 @@ func (p *parser) arg2(cmd command) int {
 type codeWriter struct {
 	file       *os.File
 	vmFileName string
+	stackIndex int
 }
 
 func newCodeWriter(fileName string) *codeWriter {
@@ -136,7 +140,12 @@ func newCodeWriter(fileName string) *codeWriter {
 	if err != nil {
 		log.Fatal(err)
 	}
-	return &codeWriter{file, ""}
+	return &codeWriter{file, "", stackPointerDefault}
+}
+
+func (c *codeWriter) initStack() {
+	c.file.WriteString("// init stack\n")
+	c.file.WriteString("@256\nD=A\n@SP\nM=D\n\n")
 }
 
 func (c *codeWriter) setFileName(fileName string) {
@@ -144,11 +153,33 @@ func (c *codeWriter) setFileName(fileName string) {
 }
 
 func (c *codeWriter) writeArithmetic(cmd string) {
-	// TODO
+	switch cmd {
+	case "add":
+		c.file.WriteString("// add\n")
+		asdm := "@SP\nM=M-1\nA=M\nD=M\nM=0\n@SP\nM=M-1\nA=M\nM=M+D\n@SP\nM=M+1\n\n"
+		c.file.WriteString(asdm)
+		break
+	default:
+		log.Fatal("not implemented")
+	}
 }
 
 func (c *codeWriter) writePushPop(cmd command, segment string, index int) {
-	// TODO
+	switch cmd {
+	case C_PUSH:
+		switch segment {
+		case "constant":
+			c.file.WriteString(fmt.Sprintf("// push constant %d\n", index))
+			asm := "@%d\nD=A\n@SP\nA=M\nM=D\n@SP\nM=M+1\n\n"
+			c.file.WriteString(fmt.Sprintf(asm, index))
+		default:
+			log.Fatal("not implemented")
+		}
+	case C_POP:
+		log.Fatal("not implemented")
+	default:
+		log.Fatal("not implemented")
+	}
 }
 
 func (c *codeWriter) close() {
