@@ -74,8 +74,10 @@ func main() {
 				line, cmd, arg1, arg2)
 			if cmd == C_ARITHMETIC {
 				codeWriter.writeArithmetic(arg1)
-			} else {
+			} else if cmd == C_PUSH || cmd == C_POP {
 				codeWriter.writePushPop(cmd, arg1, arg2)
+			} else {
+				log.Fatal("not implemented")
 			}
 		}
 	}
@@ -115,16 +117,15 @@ func (p *parser) getLine() string {
 }
 
 func (p *parser) commandType() command {
-	fullCmd := p.scanner.Text()
-	cmd := fullCmd[:3]
+	cmd := p.scanner.Text()
 	if cmd == "add" || cmd == "sub" || cmd == "neg" || cmd == "eq" || cmd == "gt" || cmd == "lt" || cmd == "and" || cmd == "or" || cmd == "not" {
 		return C_ARITHMETIC
-	} else if fullCmd[:4] == "push" {
+	} else if len(cmd) > 4 && cmd[:4] == "push" {
 		return C_PUSH
-	} else if fullCmd[:3] == "pop" {
+	} else if len(cmd) > 3 && cmd[:3] == "pop" {
 		return C_POP
 	} else {
-		log.Fatal("not implemented")
+		log.Fatalf("not implemented: %s", cmd)
 		return ""
 	}
 }
@@ -176,15 +177,69 @@ func (c *codeWriter) setFileName(fileName string) {
 }
 
 func (c *codeWriter) writeArithmetic(cmd string) {
+	getStackTop := "@SP\nM=M-1\nA=M\n"
+	setStackTopToD := getStackTop + "D=M\n" + "M=0\n"
+	incrStack := "@SP\nM=M+1\n"
+	var asmC string
 	switch cmd {
 	case "add":
 		c.file.WriteString("// add\n")
-		asdm := "@SP\nM=M-1\nA=M\nD=M\nM=0\n@SP\nM=M-1\nA=M\nM=M+D\n@SP\nM=M+1\n\n"
-		c.file.WriteString(asdm)
-		break
+		asmC = "@SP\nM=M-1\nA=M\nD=M\nM=0\n@SP\nM=M-1\nA=M\nM=M+D\n@SP\nM=M+1\n\n"
+	case "sub":
+		c.file.WriteString("// sub\n")
+		asmC = "@SP\nM=M-1\nA=M\nD=M\nM=0\n@SP\nM=M-1\nA=M\nM=M-D\n@SP\nM=M+1\n\n"
+	case "neg":
+		c.file.WriteString("// neg\n")
+		asmC = "@SP\nM=M-1\nA=M\nM=-M\n@SP\nM=M+1\n\n"
+	case "eq":
+		c.file.WriteString("// eq\n")
+		asmC = setStackTopToD + getStackTop +
+			"D=M-D\n" +
+			"@EQ\n" +
+			"D;JEQ\n" +
+			"M=0\n" +
+			"@END\n" +
+			"(EQ)\n" +
+			"M=-1\n" +
+			"(END)\n" +
+			incrStack + "\n"
+	case "gt": // x > y
+		c.file.WriteString("// gt\n")
+		asmC = setStackTopToD + getStackTop +
+			"D=M-D\n" +
+			"@EQ\n" +
+			"D;JGT\n" +
+			"M=0\n" +
+			"@END\n" +
+			"(EQ)\n" +
+			"M=-1\n" +
+			"(END)\n" +
+			incrStack + "\n"
+	case "lt": // x < y
+		c.file.WriteString("// lt\n")
+		asmC = setStackTopToD + getStackTop +
+			"D=M-D\n" +
+			"@EQ\n" +
+			"D;JLT\n" +
+			"M=0\n" +
+			"@END\n" +
+			"(EQ)\n" +
+			"M=-1\n" +
+			"(END)\n" +
+			incrStack + "\n"
+	case "and":
+		c.file.WriteString("// and\n")
+		asmC = setStackTopToD + getStackTop + "M=D&M\n" + incrStack + "\n"
+	case "or":
+		c.file.WriteString("// or\n")
+		asmC = setStackTopToD + getStackTop + "M=D|M\n" + incrStack + "\n"
+	case "not":
+		c.file.WriteString("// not\n")
+		asmC = getStackTop + "M=!M\n" + incrStack + "\n"
 	default:
 		log.Fatal("not implemented")
 	}
+	c.file.WriteString(asmC)
 }
 
 func (c *codeWriter) writePushPop(cmd command, segment string, index int) {
