@@ -157,6 +157,7 @@ type codeWriter struct {
 	file       *os.File
 	vmFileName string
 	stackIndex int
+	cmdCount   int
 }
 
 func newCodeWriter(fileName string) *codeWriter {
@@ -164,82 +165,104 @@ func newCodeWriter(fileName string) *codeWriter {
 	if err != nil {
 		log.Fatal(err)
 	}
-	return &codeWriter{file, "", stackPointerDefault}
+	return &codeWriter{file, "", stackPointerDefault, 0}
 }
 
 func (c *codeWriter) initStack() {
-	c.file.WriteString("// init stack\n")
-	c.file.WriteString("@256\nD=A\n@SP\nM=D\n\n")
+	cmd := "// init stack\n"
+	cmd += "@256\nD=A\n@SP\nM=D\n\n"
+	c.writeCommand(cmd)
 }
 
 func (c *codeWriter) setFileName(fileName string) {
 	c.vmFileName = fileName
 }
 
+func (c *codeWriter) writeCommand(cmd string) {
+	c.file.WriteString(cmd)
+	c.cmdCount++
+}
+
 func (c *codeWriter) writeArithmetic(cmd string) {
+	cmdCount := strconv.Itoa(c.cmdCount)
 	getStackTop := "@SP\nM=M-1\nA=M\n"
 	setStackTopToD := getStackTop + "D=M\n" + "M=0\n"
 	incrStack := "@SP\nM=M+1\n"
 	var asmC string
 	switch cmd {
 	case "add":
-		c.file.WriteString("// add\n")
-		asmC = "@SP\nM=M-1\nA=M\nD=M\nM=0\n@SP\nM=M-1\nA=M\nM=M+D\n@SP\nM=M+1\n\n"
+		asmC = "// add\n"
+		asmC += "@SP\nM=M-1\nA=M\nD=M\nM=0\n@SP\nM=M-1\nA=M\nM=M+D\n@SP\nM=M+1\n\n"
 	case "sub":
-		c.file.WriteString("// sub\n")
-		asmC = "@SP\nM=M-1\nA=M\nD=M\nM=0\n@SP\nM=M-1\nA=M\nM=M-D\n@SP\nM=M+1\n\n"
+		asmC = "// sub\n"
+		asmC += "@SP\nM=M-1\nA=M\nD=M\nM=0\n@SP\nM=M-1\nA=M\nM=M-D\n@SP\nM=M+1\n\n"
 	case "neg":
-		c.file.WriteString("// neg\n")
-		asmC = "@SP\nM=M-1\nA=M\nM=-M\n@SP\nM=M+1\n\n"
+		asmC = "// neg\n"
+		asmC += "@SP\nM=M-1\nA=M\nM=-M\n@SP\nM=M+1\n\n"
 	case "eq":
-		c.file.WriteString("// eq\n")
-		asmC = setStackTopToD + getStackTop +
+		asmC = "// eq\n"
+		asmC += setStackTopToD + getStackTop +
 			"D=M-D\n" +
-			"@EQ\n" +
+			"@EQ" + cmdCount + "\n" +
 			"D;JEQ\n" +
+			"@SP\n" +
+			"A=M\n" +
 			"M=0\n" +
-			"@END\n" +
-			"(EQ)\n" +
+			"@END" + cmdCount + "\n" +
+			"0;JMP\n" +
+			"(EQ" + cmdCount + ")\n" +
+			"@SP\n" +
+			"A=M\n" +
 			"M=-1\n" +
-			"(END)\n" +
+			"(END" + cmdCount + ")\n" +
 			incrStack + "\n"
 	case "gt": // x > y
-		c.file.WriteString("// gt\n")
-		asmC = setStackTopToD + getStackTop +
+		asmC = "// gt\n"
+		asmC += setStackTopToD + getStackTop +
 			"D=M-D\n" +
-			"@EQ\n" +
+			"@EQ" + cmdCount + "\n" +
 			"D;JGT\n" +
+			"@SP\n" +
+			"A=M\n" +
 			"M=0\n" +
-			"@END\n" +
-			"(EQ)\n" +
+			"@END" + cmdCount + "\n" +
+			"0;JMP\n" +
+			"(EQ" + cmdCount + ")\n" +
+			"@SP\n" +
+			"A=M\n" +
 			"M=-1\n" +
-			"(END)\n" +
+			"(END" + cmdCount + ")\n" +
 			incrStack + "\n"
 	case "lt": // x < y
-		c.file.WriteString("// lt\n")
-		asmC = setStackTopToD + getStackTop +
+		asmC = "// lt\n"
+		asmC += setStackTopToD + getStackTop +
 			"D=M-D\n" +
-			"@EQ\n" +
+			"@EQ" + cmdCount + "\n" +
 			"D;JLT\n" +
+			"@SP\n" +
+			"A=M\n" +
 			"M=0\n" +
-			"@END\n" +
-			"(EQ)\n" +
+			"@END" + cmdCount + "\n" +
+			"0;JMP\n" +
+			"(EQ" + cmdCount + ")\n" +
+			"@SP\n" +
+			"A=M\n" +
 			"M=-1\n" +
-			"(END)\n" +
+			"(END" + cmdCount + ")\n" +
 			incrStack + "\n"
 	case "and":
-		c.file.WriteString("// and\n")
-		asmC = setStackTopToD + getStackTop + "M=D&M\n" + incrStack + "\n"
+		asmC = "// and\n"
+		asmC += setStackTopToD + getStackTop + "M=D&M\n" + incrStack + "\n"
 	case "or":
-		c.file.WriteString("// or\n")
-		asmC = setStackTopToD + getStackTop + "M=D|M\n" + incrStack + "\n"
+		asmC = "// or\n"
+		asmC += setStackTopToD + getStackTop + "M=D|M\n" + incrStack + "\n"
 	case "not":
-		c.file.WriteString("// not\n")
-		asmC = getStackTop + "M=!M\n" + incrStack + "\n"
+		asmC = "// not\n"
+		asmC += getStackTop + "M=!M\n" + incrStack + "\n"
 	default:
 		log.Fatal("not implemented")
 	}
-	c.file.WriteString(asmC)
+	c.writeCommand(asmC)
 }
 
 func (c *codeWriter) writePushPop(cmd command, segment string, index int) {
@@ -247,9 +270,9 @@ func (c *codeWriter) writePushPop(cmd command, segment string, index int) {
 	case C_PUSH:
 		switch segment {
 		case "constant":
-			c.file.WriteString(fmt.Sprintf("// push constant %d\n", index))
-			asm := "@%d\nD=A\n@SP\nA=M\nM=D\n@SP\nM=M+1\n\n"
-			c.file.WriteString(fmt.Sprintf(asm, index))
+			cmd := fmt.Sprintf("// push constant %d\n", index)
+			cmd += fmt.Sprintf("@%d\nD=A\n@SP\nA=M\nM=D\n@SP\nM=M+1\n\n", index)
+			c.writeCommand(cmd)
 		default:
 			log.Fatal("not implemented")
 		}
