@@ -43,13 +43,16 @@ func main() {
 	args := os.Args[1:]
 	fmt.Printf("args: %+v\n", args)
 	filePath := args[0]
-	fileName := filePath
+	asmPath := filePath + ".asm"
 	var parsers []*parser
 	// if filename has .vm extension, then it's a single file
 	if len(filePath) > 3 && filePath[len(filePath)-3:] == ".vm" {
-		fileName = filePath[:len(filePath)-3]
+		fileName := filePath[:len(filePath)-3]
+		asmPath = fileName + ".asm"
 		parsers = append(parsers, newParser(filePath))
 	} else {
+		fileName := strings.Split(filePath, "/")[len(strings.Split(filePath, "/"))-1]
+		asmPath = filePath + "/" + fileName + ".asm"
 		files, err := ioutil.ReadDir(filePath)
 		if err != nil {
 			log.Fatal(err)
@@ -61,8 +64,9 @@ func main() {
 		}
 
 	}
+	fmt.Println("fileName: ", asmPath)
 
-	codeWriter := newCodeWriter(fileName + ".asm")
+	codeWriter := newCodeWriter(asmPath)
 	codeWriter.initStack()
 	for _, parser := range parsers {
 		for parser.advance() {
