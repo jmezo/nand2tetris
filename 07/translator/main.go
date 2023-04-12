@@ -192,9 +192,7 @@ func (c *codeWriter) writeArithmetic(cmd string) {
 	getStackTop := "@SP\n" +
 		"M=M-1\n" +
 		"A=M\n"
-	setStackTopToD := getStackTop +
-		"D=M\n" +
-		"M=0\n"
+
 	incrStack := "@SP\n" +
 		"M=M+1\n"
 
@@ -210,7 +208,9 @@ func (c *codeWriter) writeArithmetic(cmd string) {
 		"M=%s\n" + // M=-M, M=!M
 		incrStack + "\n"
 
-	cmpCommand := setStackTopToD + getStackTop +
+	cmpCommand := getStackTop +
+		"D+M\n" +
+		getStackTop +
 		"D=M-D\n" +
 		"@CMD" + cmdCount + "\n" +
 		"D;%s\n" + // JEQ, JGT, JLT
