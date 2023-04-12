@@ -189,80 +189,72 @@ func (c *codeWriter) writeCommand(cmd string) {
 
 func (c *codeWriter) writeArithmetic(cmd string) {
 	cmdCount := strconv.Itoa(c.cmdCount)
-	getStackTop := "@SP\nM=M-1\nA=M\n"
-	setStackTopToD := getStackTop + "D=M\n" + "M=0\n"
-	incrStack := "@SP\nM=M+1\n"
+	getStackTop := "@SP\n" +
+		"M=M-1\n" +
+		"A=M\n"
+	setStackTopToD := getStackTop +
+		"D=M\n" +
+		"M=0\n"
+	incrStack := "@SP\n" +
+		"M=M+1\n"
+
+	alu2ParamCommand := getStackTop +
+		"D=M\n" +
+		"@SP\n" +
+		"M=M-1\n" +
+		"A=M\n" +
+		"M=%s\n" + // M=M+D, M=M-D, M=M&D, M=M|D
+		incrStack + "\n"
+
+	alu1ParamCommand := getStackTop +
+		"M=%s\n" + // M=-M, M=!M
+		incrStack + "\n"
+
+	cmpCommand := setStackTopToD + getStackTop +
+		"D=M-D\n" +
+		"@CMD" + cmdCount + "\n" +
+		"D;%s\n" + // JEQ, JGT, JLT
+		"@SP\n" +
+		"A=M\n" +
+		"M=0\n" +
+		"@END" + cmdCount + "\n" +
+		"0;JMP\n" +
+		"(CMD" + cmdCount + ")\n" +
+		"@SP\n" +
+		"A=M\n" +
+		"M=-1\n" +
+		"(END" + cmdCount + ")\n" +
+		incrStack + "\n"
+
 	var asmC string
 	switch cmd {
 	case "add":
 		asmC = "// add\n"
-		asmC += "@SP\nM=M-1\nA=M\nD=M\nM=0\n@SP\nM=M-1\nA=M\nM=M+D\n@SP\nM=M+1\n\n"
+		asmC += fmt.Sprintf(alu2ParamCommand, "M+D")
 	case "sub":
 		asmC = "// sub\n"
-		asmC += "@SP\nM=M-1\nA=M\nD=M\nM=0\n@SP\nM=M-1\nA=M\nM=M-D\n@SP\nM=M+1\n\n"
+		asmC += fmt.Sprintf(alu2ParamCommand, "M-D")
 	case "neg":
 		asmC = "// neg\n"
-		asmC += "@SP\nM=M-1\nA=M\nM=-M\n@SP\nM=M+1\n\n"
+		asmC += fmt.Sprintf(alu1ParamCommand, "-M")
 	case "eq":
 		asmC = "// eq\n"
-		asmC += setStackTopToD + getStackTop +
-			"D=M-D\n" +
-			"@EQ" + cmdCount + "\n" +
-			"D;JEQ\n" +
-			"@SP\n" +
-			"A=M\n" +
-			"M=0\n" +
-			"@END" + cmdCount + "\n" +
-			"0;JMP\n" +
-			"(EQ" + cmdCount + ")\n" +
-			"@SP\n" +
-			"A=M\n" +
-			"M=-1\n" +
-			"(END" + cmdCount + ")\n" +
-			incrStack + "\n"
+		asmC += fmt.Sprintf(cmpCommand, "JEQ")
 	case "gt": // x > y
 		asmC = "// gt\n"
-		asmC += setStackTopToD + getStackTop +
-			"D=M-D\n" +
-			"@EQ" + cmdCount + "\n" +
-			"D;JGT\n" +
-			"@SP\n" +
-			"A=M\n" +
-			"M=0\n" +
-			"@END" + cmdCount + "\n" +
-			"0;JMP\n" +
-			"(EQ" + cmdCount + ")\n" +
-			"@SP\n" +
-			"A=M\n" +
-			"M=-1\n" +
-			"(END" + cmdCount + ")\n" +
-			incrStack + "\n"
+		asmC += fmt.Sprintf(cmpCommand, "JGT")
 	case "lt": // x < y
 		asmC = "// lt\n"
-		asmC += setStackTopToD + getStackTop +
-			"D=M-D\n" +
-			"@EQ" + cmdCount + "\n" +
-			"D;JLT\n" +
-			"@SP\n" +
-			"A=M\n" +
-			"M=0\n" +
-			"@END" + cmdCount + "\n" +
-			"0;JMP\n" +
-			"(EQ" + cmdCount + ")\n" +
-			"@SP\n" +
-			"A=M\n" +
-			"M=-1\n" +
-			"(END" + cmdCount + ")\n" +
-			incrStack + "\n"
+		asmC += fmt.Sprintf(cmpCommand, "JLT")
 	case "and":
 		asmC = "// and\n"
-		asmC += setStackTopToD + getStackTop + "M=D&M\n" + incrStack + "\n"
+		asmC += fmt.Sprintf(alu2ParamCommand, "M&D")
 	case "or":
 		asmC = "// or\n"
-		asmC += setStackTopToD + getStackTop + "M=D|M\n" + incrStack + "\n"
+		asmC += fmt.Sprintf(alu2ParamCommand, "M|D")
 	case "not":
 		asmC = "// not\n"
-		asmC += getStackTop + "M=!M\n" + incrStack + "\n"
+		asmC += fmt.Sprintf(alu1ParamCommand, "!M")
 	default:
 		log.Fatal("not implemented")
 	}
