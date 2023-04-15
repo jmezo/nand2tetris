@@ -340,6 +340,12 @@ func (c *codeWriter) writePushPop(cmd command, segment string, index int) {
 			cmd := fmt.Sprintf("// push temp %d\n", index)
 			cmd += fmt.Sprintf(pushRamToStack, "R5", index)
 			c.writeCommand(cmd)
+		case "static":
+			cmd := fmt.Sprintf("// push static %d\n", index)
+			cmd += "@static." + strconv.Itoa(index) + "\n"
+			cmd += "D=M\n"
+			cmd += pushDToStack
+			c.writeCommand(cmd)
 		default:
 			log.Fatal("not implemented")
 		}
@@ -369,6 +375,11 @@ func (c *codeWriter) writePushPop(cmd command, segment string, index int) {
 			cmd := fmt.Sprintf("// pop temp %d\n", index)
 			cmd += fmt.Sprintf(popStackToRam, "R5", index)
 			c.writeCommand(cmd)
+		case "static":
+			cmd := fmt.Sprintf("// pop static %d\n", index)
+			cmd += popStackToD
+			cmd += "@static." + strconv.Itoa(index) + "\n"
+			cmd += "M=D\n"
 		default:
 			log.Fatal("not implemented")
 		}
