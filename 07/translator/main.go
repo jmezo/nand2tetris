@@ -262,6 +262,53 @@ func (c *codeWriter) writeArithmetic(cmd string) {
 }
 
 func (c *codeWriter) writePushPop(cmd command, segment string, index int) {
+	pushDToStack := "@SP\n" +
+		"A=M\n" +
+		"M=D\n" +
+		"@SP\n" +
+		"M=M+1\n"
+
+	pushSegmentToStack := "@%s\n" +
+		"D=M\n" +
+		"@%d\n" +
+		"A=A+D\n" +
+		"D=M\n" +
+		pushDToStack
+
+	pushRamToStack := "@%s\n" +
+		"D=A\n" +
+		"@%d\n" +
+		"A=A+D\n" +
+		"D=M\n" +
+		pushDToStack
+
+	popStackToD := "@SP\n" +
+		"M=M-1\n" +
+		"A=M\n" +
+		"D=M\n"
+
+	popStackToRam := "@%s\n" +
+		"D=A\n" +
+		"@%d\n" +
+		"D=A+D\n" +
+		"@R13\n" +
+		"M=D\n" +
+		popStackToD +
+		"@R13\n" +
+		"A=M\n" +
+		"M=D\n"
+
+	popStackToSegment := "@%s\n" +
+		"D=M\n" +
+		"@%d\n" +
+		"D=A+D\n" +
+		"@R13\n" +
+		"M=D\n" +
+		popStackToD +
+		"@R13\n" +
+		"A=M\n" +
+		"M=D\n"
+
 	switch cmd {
 	case C_PUSH:
 		switch segment {
@@ -269,11 +316,62 @@ func (c *codeWriter) writePushPop(cmd command, segment string, index int) {
 			cmd := fmt.Sprintf("// push constant %d\n", index)
 			cmd += fmt.Sprintf("@%d\nD=A\n@SP\nA=M\nM=D\n@SP\nM=M+1\n\n", index)
 			c.writeCommand(cmd)
+		case "local":
+			cmd := fmt.Sprintf("// push local %d\n", index)
+			cmd += fmt.Sprintf(pushSegmentToStack, "LCL", index)
+			c.writeCommand(cmd)
+		case "argument":
+			cmd := fmt.Sprintf("// push argument %d\n", index)
+			cmd += fmt.Sprintf(pushSegmentToStack, "ARG", index)
+			c.writeCommand(cmd)
+		case "this":
+			cmd := fmt.Sprintf("// push this %d\n", index)
+			cmd += fmt.Sprintf(pushSegmentToStack, "THIS", index)
+			c.writeCommand(cmd)
+		case "that":
+			cmd := fmt.Sprintf("// push that %d\n", index)
+			cmd += fmt.Sprintf(pushSegmentToStack, "THAT", index)
+			c.writeCommand(cmd)
+		case "pointer":
+			cmd := fmt.Sprintf("// push pointer %d\n", index)
+			cmd += fmt.Sprintf(pushRamToStack, "THIS", index)
+			c.writeCommand(cmd)
+		case "temp":
+			cmd := fmt.Sprintf("// push temp %d\n", index)
+			cmd += fmt.Sprintf(pushRamToStack, "R5", index)
+			c.writeCommand(cmd)
 		default:
 			log.Fatal("not implemented")
 		}
 	case C_POP:
-		log.Fatal("not implemented")
+		switch segment {
+		case "local":
+			cmd := fmt.Sprintf("// pop local %d\n", index)
+			cmd += fmt.Sprintf(popStackToSegment, "LCL", index)
+			c.writeCommand(cmd)
+		case "argument":
+			cmd := fmt.Sprintf("// pop argument %d\n", index)
+			cmd += fmt.Sprintf(popStackToSegment, "ARG", index)
+			c.writeCommand(cmd)
+		case "this":
+			cmd := fmt.Sprintf("// pop this %d\n", index)
+			cmd += fmt.Sprintf(popStackToSegment, "THIS", index)
+			c.writeCommand(cmd)
+		case "that":
+			cmd := fmt.Sprintf("// pop that %d\n", index)
+			cmd += fmt.Sprintf(popStackToSegment, "THAT", index)
+			c.writeCommand(cmd)
+		case "pointer":
+			cmd := fmt.Sprintf("// pop pointer %d\n", index)
+			cmd += fmt.Sprintf(popStackToRam, "THIS", index)
+			c.writeCommand(cmd)
+		case "temp":
+			cmd := fmt.Sprintf("// pop temp %d\n", index)
+			cmd += fmt.Sprintf(popStackToRam, "R5", index)
+			c.writeCommand(cmd)
+		default:
+			log.Fatal("not implemented")
+		}
 	default:
 		log.Fatal("not implemented")
 	}
