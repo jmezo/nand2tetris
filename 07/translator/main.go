@@ -314,7 +314,9 @@ func (c *codeWriter) writePushPop(cmd command, segment string, index int) {
 		switch segment {
 		case "constant":
 			cmd := fmt.Sprintf("// push constant %d\n", index)
-			cmd += fmt.Sprintf("@%d\nD=A\n@SP\nA=M\nM=D\n@SP\nM=M+1\n\n", index)
+			cmd += fmt.Sprintf("@%d\n", index) +
+				"D=A\n" +
+				pushDToStack
 			c.writeCommand(cmd)
 		case "local":
 			cmd := fmt.Sprintf("// push local %d\n", index)
