@@ -380,6 +380,7 @@ func (c *codeWriter) writePushPop(cmd command, segment string, index int) {
 			cmd += popStackToD
 			cmd += "@static." + strconv.Itoa(index) + "\n"
 			cmd += "M=D\n"
+			c.writeCommand(cmd)
 		default:
 			log.Fatal("not implemented")
 		}
