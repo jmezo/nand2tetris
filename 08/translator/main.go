@@ -81,8 +81,12 @@ func main() {
 				codeWriter.writeArithmetic(arg1)
 			} else if cmd == C_PUSH || cmd == C_POP {
 				codeWriter.writePushPop(cmd, arg1, arg2)
+			} else if cmd == C_LABEL {
+				codeWriter.writeLabel(arg1)
+			} else if cmd == C_IF {
+				codeWriter.writeIf(arg1)
 			} else {
-				log.Fatal("not implemented")
+				log.Fatal("codeWriter not implemented for command: ", cmd)
 			}
 		}
 	}
@@ -264,7 +268,7 @@ func (c *codeWriter) writeArithmetic(cmd string) {
 		asmC = "// not\n"
 		asmC += fmt.Sprintf(alu1ParamCommand, "!M")
 	default:
-		log.Fatal("not implemented")
+		log.Fatal("arithmetic not implemented")
 	}
 	c.writeCommand(asmC)
 }
@@ -357,7 +361,7 @@ func (c *codeWriter) writePushPop(cmd command, segment string, index int) {
 			cmd += pushDToStack
 			c.writeCommand(cmd)
 		default:
-			log.Fatal("not implemented")
+			log.Fatal("push segment not implemented")
 		}
 	case C_POP:
 		switch segment {
