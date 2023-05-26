@@ -133,6 +133,10 @@ func (p *parser) commandType() command {
 		return C_PUSH
 	} else if len(cmd) > 3 && cmd[:3] == "pop" {
 		return C_POP
+	} else if len(cmd) > 5 && cmd[:5] == "label" {
+		return C_LABEL
+	} else if len(cmd) > 2 && cmd[:2] == "if" {
+		return C_IF
 	} else {
 		// TODO implement C_LABEL, C_GOTO, C_IF, C_FUNCTION, C_RETURN, and C_CALL
 		log.Fatalf("not implemented: %s", cmd)
@@ -396,15 +400,15 @@ func (c *codeWriter) writePushPop(cmd command, segment string, index int) {
 			cmd += "M=D\n"
 			c.writeCommand(cmd)
 		default:
-			log.Fatal("not implemented")
+			log.Fatal("pop segment not implemented")
 		}
 	default:
-		log.Fatal("not implemented")
+		log.Fatal("push-pop not implemented")
 	}
 }
 
 func (c *codeWriter) writeLabel(label string) {
-	// TODO
+	c.writeCommand(fmt.Sprintf("(%s)\n", label))
 }
 
 func (c *codeWriter) writeGoto(label string) {
@@ -412,7 +416,14 @@ func (c *codeWriter) writeGoto(label string) {
 }
 
 func (c *codeWriter) writeIf(label string) {
-	// TODO
+	popStackToD := "@SP\n" +
+		"M=M-1\n" +
+		"A=M\n" +
+		"D=M\n"
+	ifGoto := "@%s\n" +
+		"0;JNE\n"
+	c.writeCommand(fmt.Sprintf("// if-goto %s\n", label))
+	c.writeCommand(fmt.Sprintf(popStackToD+ifGoto, label))
 }
 
 func (c *codeWriter) writeCall(functionName string, numArgs int) {
