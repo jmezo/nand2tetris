@@ -83,6 +83,8 @@ func main() {
 				codeWriter.writePushPop(cmd, arg1, arg2)
 			} else if cmd == C_LABEL {
 				codeWriter.writeLabel(arg1)
+			} else if cmd == C_GOTO {
+				codeWriter.writeGoto(arg1)
 			} else if cmd == C_IF {
 				codeWriter.writeIf(arg1)
 			} else {
@@ -135,6 +137,8 @@ func (p *parser) commandType() command {
 		return C_POP
 	} else if len(cmd) > 5 && cmd[:5] == "label" {
 		return C_LABEL
+	} else if len(cmd) > 4 && cmd[:4] == "goto" {
+		return C_GOTO
 	} else if len(cmd) > 2 && cmd[:2] == "if" {
 		return C_IF
 	} else {
@@ -412,7 +416,10 @@ func (c *codeWriter) writeLabel(label string) {
 }
 
 func (c *codeWriter) writeGoto(label string) {
-	// TODO
+	gotoCmd := "@%s\n" +
+		"0;JMP\n"
+	c.writeCommand(fmt.Sprintf("// goto %s\n", label))
+	c.writeCommand(fmt.Sprintf(gotoCmd, label))
 }
 
 func (c *codeWriter) writeIf(label string) {
