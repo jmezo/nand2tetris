@@ -421,7 +421,7 @@ func (c *codeWriter) writeIf(label string) {
 		"A=M\n" +
 		"D=M\n"
 	ifGoto := "@%s\n" +
-		"0;JNE\n"
+		"D;JNE\n"
 	c.writeCommand(fmt.Sprintf("// if-goto %s\n", label))
 	c.writeCommand(fmt.Sprintf(popStackToD+ifGoto, label))
 }
