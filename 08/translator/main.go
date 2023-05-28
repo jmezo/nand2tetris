@@ -87,6 +87,10 @@ func main() {
 				codeWriter.writeGoto(arg1)
 			} else if cmd == C_IF {
 				codeWriter.writeIf(arg1)
+			} else if cmd == C_FUNCTION {
+				codeWriter.writeFunction(arg1, arg2)
+			} else if cmd == C_RETURN {
+				codeWriter.writeReturn()
 			} else {
 				log.Fatal("codeWriter not implemented for command: ", cmd)
 			}
@@ -141,9 +145,13 @@ func (p *parser) commandType() command {
 		return C_GOTO
 	} else if len(cmd) > 2 && cmd[:2] == "if" {
 		return C_IF
+	} else if len(cmd) > 8 && cmd[:8] == "function" {
+		return C_FUNCTION
+	} else if cmd == "return" {
+		return C_RETURN
 	} else {
 		// TODO implement C_LABEL, C_GOTO, C_IF, C_FUNCTION, C_RETURN, and C_CALL
-		log.Fatalf("not implemented: %s", cmd)
+		log.Fatalf("cmd not implemented: %s", cmd)
 		return ""
 	}
 }
@@ -438,11 +446,74 @@ func (c *codeWriter) writeCall(functionName string, numArgs int) {
 }
 
 func (c *codeWriter) writeReturn() {
-	// TODO
+	frame := "@LCL\n" +
+		"D=M\n" +
+		"@R13\n" +
+		"M=D\n"
+	c.writeCommand("// FRAME = LCL\n")
+	c.writeCommand(frame)
+
+	ret := "@5\n" +
+		"A=D-A\n" +
+		"D=M\n" +
+		"@R14\n" +
+		"M=D\n"
+	c.writeCommand("// RET = *(FRAME - 5)\n")
+	c.writeCommand(ret)
+
+	popStackToD := "@SP\n" +
+		"M=M-1\n" +
+		"A=M\n" +
+		"D=M\n"
+	argPop := popStackToD +
+		"@ARG\n" +
+		"A=M\n" +
+		"M=D\n"
+	c.writeCommand("// *ARG = pop()\n")
+	c.writeCommand(argPop)
+
+	restoreSP := "@ARG\n" +
+		"A=M\n" +
+		"D=A+1\n" +
+		"@SP\n" +
+		"M=D\n"
+	c.writeCommand("// SP = ARG + 1\n")
+	c.writeCommand(restoreSP)
+
+	c.writeCommand("// THAT THIS ARG LCL\n")
+	frame1 := "@R13\n" +
+		"M=M-1\n" +
+		"A=M\n" +
+		"D=M\n"
+	that := frame1 +
+		"@THAT\n" +
+		"M=D\n"
+	c.writeCommand(that)
+	this := frame1 +
+		"@THIS\n" +
+		"M=D\n"
+	c.writeCommand(this)
+	arg := frame1 +
+		"@ARG\n" +
+		"M=D\n"
+	c.writeCommand(arg)
+	lcl := frame1 +
+		"@LCL\n" +
+		"M=D\n"
+	c.writeCommand(lcl)
+	gotoRET := "@R14\n" +
+		"A=M\n" +
+		"0;JMP\n"
+
+	c.writeCommand("// goto RET\n")
+	c.writeCommand(gotoRET)
 }
 
 func (c *codeWriter) writeFunction(functionName string, numLocals int) {
-	// TODO
+	c.writeCommand(fmt.Sprintf("// function %s %d\n", functionName, numLocals))
+	for i := 0; i < numLocals; i++ {
+		c.writePushPop(C_PUSH, "constant", 0)
+	}
 }
 
 func (c *codeWriter) close() {
