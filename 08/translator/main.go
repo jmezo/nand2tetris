@@ -161,7 +161,12 @@ func (p *parser) arg1(cmd command) string {
 	if cmd == C_ARITHMETIC {
 		return line
 	} else {
-		return strings.Split(line, " ")[1]
+		res := strings.Split(line, " ")
+		if len(res) > 1 {
+			return res[1]
+		} else {
+			return ""
+		}
 	}
 }
 
