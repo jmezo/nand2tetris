@@ -447,7 +447,45 @@ func (c *codeWriter) writeIf(label string) {
 }
 
 func (c *codeWriter) writeCall(functionName string, numArgs int) {
-	// TODO
+	// TODO unique returnAddress?
+	pushDToStack := "@SP\n" +
+		"A=M\n" +
+		"M=D\n" +
+		"@SP\n" +
+		"M=M+1\n"
+	pushPointerToStack := "@%s\n" +
+		"D=A\n" +
+		pushDToStack
+	c.writeCommand("// push return-address\n")
+	c.writeCommand(fmt.Sprintf(pushPointerToStack, "return-address"))
+	c.writeCommand("// push LCL\n")
+	c.writeCommand(fmt.Sprintf(pushPointerToStack, "LCL"))
+	c.writeCommand("// push ARG\n")
+	c.writeCommand(fmt.Sprintf(pushPointerToStack, "ARG"))
+	c.writeCommand("// push THIS\n")
+	c.writeCommand(fmt.Sprintf(pushPointerToStack, "THIS"))
+	c.writeCommand("// push THAT\n")
+	c.writeCommand(fmt.Sprintf(pushPointerToStack, "THAT"))
+	setARG := "@SP\n" +
+		"D=M\n" +
+		"@5\n" +
+		"D=D-A\n" +
+		"@%d\n" +
+		"D=D-A\n" +
+		"@ARG\n" +
+		"M=D\n"
+	c.writeCommand("// ARG = SP - n -5\n")
+	c.writeCommand(fmt.Sprintf(setARG, numArgs))
+	// LCL = SP
+	setLCL := "@SP\n" +
+		"D=A\n" +
+		"@LCL\n" +
+		"M=D\n"
+	c.writeCommand("// LCL = SP\n")
+	c.writeCommand(setLCL)
+	c.writeCommand("// goto f\n")
+	c.writeGoto(functionName)
+	c.writeCommand("// label return-address\n")
 }
 
 func (c *codeWriter) writeReturn() {
