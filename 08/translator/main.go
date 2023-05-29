@@ -454,7 +454,7 @@ func (c *codeWriter) writeIf(label string) {
 }
 
 func (c *codeWriter) writeCall(functionName string, numArgs int) {
-	returnAddress := fmt.Sprintf("%s-%d-%d", functionName, numArgs, c.cmdCount)
+	returnAddress := fmt.Sprintf("%s:%d:%d", functionName, numArgs, c.cmdCount)
 	c.writeCommand(fmt.Sprintf("// ** start call %s %d **\n", functionName, numArgs))
 	pushDToStack := "@SP\n" +
 		"A=M\n" +
