@@ -67,11 +67,13 @@ func main() {
 		}
 
 	}
-	fmt.Println("fileName: ", asmPath)
+	fmt.Println("asm path: ", asmPath)
 
 	codeWriter := newCodeWriter(asmPath)
 	codeWriter.writeInit()
 	for _, parser := range parsers {
+		codeWriter.setFileName(parser.getFileName())
+		fmt.Printf("vm fileName: %s\n", parser.getFileName())
 		for parser.advance() {
 			cmd := parser.commandType()
 			line := parser.getLine()
@@ -115,6 +117,17 @@ func newParser(path string) *parser {
 	}
 	scanner := bufio.NewScanner(file)
 	return &parser{file, scanner}
+}
+
+func (p *parser) getFileName() string {
+	asd := regexp.MustCompile(`([^/]+)\.vm$`)
+	matches := asd.FindStringSubmatch(p.file.Name())
+	if len(matches) > 1 {
+		return matches[1]
+	} else {
+		log.Fatal("could not parse filename from path: ", p.file.Name())
+		return ""
+	}
 }
 
 func (p *parser) advance() bool {
@@ -382,7 +395,7 @@ func (c *codeWriter) writePushPop(cmd command, segment string, index int) {
 			c.writeCommand(cmd)
 		case "static":
 			cmd := fmt.Sprintf("// push static %d\n", index)
-			cmd += "@static." + strconv.Itoa(index) + "\n"
+			cmd += fmt.Sprintf("@static.%s.%d\n", c.vmFileName, index)
 			cmd += "D=M\n"
 			cmd += pushDToStack
 			c.writeCommand(cmd)
@@ -418,7 +431,7 @@ func (c *codeWriter) writePushPop(cmd command, segment string, index int) {
 		case "static":
 			cmd := fmt.Sprintf("// pop static %d\n", index)
 			cmd += popStackToD
-			cmd += "@static." + strconv.Itoa(index) + "\n"
+			cmd += fmt.Sprintf("@static.%s.%d\n", c.vmFileName, index)
 			cmd += "M=D\n"
 			c.writeCommand(cmd)
 		default:
