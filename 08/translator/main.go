@@ -262,7 +262,7 @@ func (c *codeWriter) writeArithmetic(cmd string) {
 		"A=M\n" +
 		"M=-1\n" +
 		"(END" + cmdCount + ")\n" +
-		incrStack + "\n"
+		incrStack
 
 	var asmC string
 	switch cmd {
