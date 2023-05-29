@@ -137,20 +137,23 @@ func (p *parser) getLine() string {
 
 func (p *parser) commandType() command {
 	cmd := p.scanner.Text()
+	cmd = strings.Split(cmd, " ")[0]
 	if cmd == "add" || cmd == "sub" || cmd == "neg" || cmd == "eq" || cmd == "gt" || cmd == "lt" || cmd == "and" || cmd == "or" || cmd == "not" {
 		return C_ARITHMETIC
-	} else if len(cmd) > 4 && cmd[:4] == "push" {
+	} else if cmd == "push" {
 		return C_PUSH
-	} else if len(cmd) > 3 && cmd[:3] == "pop" {
+	} else if cmd == "pop" {
 		return C_POP
-	} else if len(cmd) > 5 && cmd[:5] == "label" {
+	} else if cmd == "label" {
 		return C_LABEL
-	} else if len(cmd) > 4 && cmd[:4] == "goto" {
+	} else if cmd == "goto" {
 		return C_GOTO
-	} else if len(cmd) > 2 && cmd[:2] == "if" {
+	} else if cmd == "if-goto" {
 		return C_IF
-	} else if len(cmd) > 8 && cmd[:8] == "function" {
+	} else if cmd == "function" {
 		return C_FUNCTION
+	} else if cmd == "call" {
+		return C_CALL
 	} else if cmd == "return" {
 		return C_RETURN
 	} else {
@@ -162,12 +165,12 @@ func (p *parser) commandType() command {
 
 func (p *parser) arg1(cmd command) string {
 	line := p.scanner.Text()
+	split := strings.Split(line, " ")
 	if cmd == C_ARITHMETIC {
-		return line
+		return split[0]
 	} else {
-		res := strings.Split(line, " ")
-		if len(res) > 1 {
-			return res[1]
+		if len(split) > 1 {
+			return split[1]
 		} else {
 			return ""
 		}
