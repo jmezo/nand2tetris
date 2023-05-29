@@ -41,6 +41,8 @@ const (
 )
 
 func main() {
+	log.SetFlags(log.LstdFlags | log.Lshortfile)
+
 	args := os.Args[1:]
 	fmt.Printf("args: %+v\n", args)
 	filePath := args[0]
