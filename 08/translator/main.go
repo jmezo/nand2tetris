@@ -193,9 +193,12 @@ func (p *parser) arg1(cmd command) string {
 func (p *parser) arg2(cmd command) int {
 	line := p.scanner.Text()
 	if cmd == C_PUSH || cmd == C_POP || cmd == C_FUNCTION || cmd == C_CALL {
-		argStr := strings.Split(line, " ")[2]
 		re := regexp.MustCompile(`\s`)
-		argStr = re.ReplaceAllString(argStr, "")
+		split := re.Split(string(line), -1)
+		if len(split) < 3 {
+			log.Fatalf("arg2: not enough arguments on line: %s", line)
+		}
+		argStr := split[2]
 		arg, err := strconv.Atoi(argStr)
 		if err != nil {
 			log.Fatalf("arg2: %s is not a number on line: %s", argStr, line)
