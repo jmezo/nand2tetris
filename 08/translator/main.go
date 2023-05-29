@@ -500,6 +500,7 @@ func (c *codeWriter) writeCall(functionName string, numArgs int) {
 }
 
 func (c *codeWriter) writeReturn() {
+	c.writeCommand("// ** start return **\n")
 	frame := "@LCL\n" +
 		"D=M\n" +
 		"@R13\n" +
@@ -561,10 +562,12 @@ func (c *codeWriter) writeReturn() {
 
 	c.writeCommand("// goto RET\n")
 	c.writeCommand(gotoRET)
+	c.writeCommand("// ** end return **\n")
 }
 
 func (c *codeWriter) writeFunction(functionName string, numLocals int) {
 	c.writeCommand(fmt.Sprintf("// function %s %d\n", functionName, numLocals))
+	c.writeLabel(functionName)
 	for i := 0; i < numLocals; i++ {
 		c.writePushPop(C_PUSH, "constant", 0)
 	}
