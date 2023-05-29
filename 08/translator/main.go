@@ -452,18 +452,21 @@ func (c *codeWriter) writeIf(label string) {
 }
 
 func (c *codeWriter) writeCall(functionName string, numArgs int) {
-	returnAddress := fmt.Sprintf("%s:%d:%d", functionName, numArgs, c.cmdCount)
-	c.writeCommand(fmt.Sprintf("// ** start call %s %d **\n", functionName, numArgs))
 	pushDToStack := "@SP\n" +
 		"A=M\n" +
 		"M=D\n" +
 		"@SP\n" +
 		"M=M+1\n"
-	pushPointerToStack := "@%s\n" +
+	returnAddress := fmt.Sprintf("%s:%d:%d", functionName, numArgs, c.cmdCount)
+	c.writeCommand(fmt.Sprintf("// ** start call %s %d **\n", functionName, numArgs))
+	c.writeCommand("// push return-address\n")
+	pushRetAddr := "@%s\n" +
 		"D=A\n" +
 		pushDToStack
-	c.writeCommand("// push return-address\n")
-	c.writeCommand(fmt.Sprintf(pushPointerToStack, returnAddress))
+	c.writeCommand(fmt.Sprintf(pushRetAddr, returnAddress))
+	pushPointerToStack := "@%s\n" +
+		"D=M\n" +
+		pushDToStack
 	c.writeCommand("// push LCL\n")
 	c.writeCommand(fmt.Sprintf(pushPointerToStack, "LCL"))
 	c.writeCommand("// push ARG\n")
