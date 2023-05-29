@@ -70,7 +70,7 @@ func main() {
 	fmt.Println("fileName: ", asmPath)
 
 	codeWriter := newCodeWriter(asmPath)
-	codeWriter.initStack()
+	codeWriter.writeInit()
 	for _, parser := range parsers {
 		for parser.advance() {
 			cmd := parser.commandType()
@@ -208,14 +208,12 @@ func newCodeWriter(fileName string) *codeWriter {
 	return &codeWriter{file, "", stackPointerDefault, 0}
 }
 
-func (c *codeWriter) initStack() {
-	cmd := "// init stack\n"
-	cmd += "@256\nD=A\n@SP\nM=D\n\n"
-	c.writeCommand(cmd)
-}
-
 func (c *codeWriter) writeInit() {
-	// TODO create Sys.init function, replate this with initStack
+	c.writeCommand("// ** start init\n")
+	initStack := "@256\nD=A\n@SP\nM=D\n"
+	c.writeCommand(initStack)
+	c.writeCall("Sys.init", 0)
+	c.writeCommand("// ** end init\n")
 }
 
 func (c *codeWriter) setFileName(fileName string) {
