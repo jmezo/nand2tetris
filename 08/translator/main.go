@@ -91,6 +91,8 @@ func main() {
 				codeWriter.writeIf(arg1)
 			} else if cmd == C_FUNCTION {
 				codeWriter.writeFunction(arg1, arg2)
+			} else if cmd == C_CALL {
+				codeWriter.writeCall(arg1, arg2)
 			} else if cmd == C_RETURN {
 				codeWriter.writeReturn()
 			} else {
