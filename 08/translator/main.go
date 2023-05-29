@@ -454,7 +454,7 @@ func (c *codeWriter) writeIf(label string) {
 }
 
 func (c *codeWriter) writeCall(functionName string, numArgs int) {
-	// TODO unique returnAddress?
+	returnAddress := fmt.Sprintf("%s-%d-%d", functionName, numArgs, c.cmdCount)
 	pushDToStack := "@SP\n" +
 		"A=M\n" +
 		"M=D\n" +
@@ -464,7 +464,7 @@ func (c *codeWriter) writeCall(functionName string, numArgs int) {
 		"D=A\n" +
 		pushDToStack
 	c.writeCommand("// push return-address\n")
-	c.writeCommand(fmt.Sprintf(pushPointerToStack, "return-address"))
+	c.writeCommand(fmt.Sprintf(pushPointerToStack, returnAddress))
 	c.writeCommand("// push LCL\n")
 	c.writeCommand(fmt.Sprintf(pushPointerToStack, "LCL"))
 	c.writeCommand("// push ARG\n")
@@ -493,6 +493,7 @@ func (c *codeWriter) writeCall(functionName string, numArgs int) {
 	c.writeCommand("// goto f\n")
 	c.writeGoto(functionName)
 	c.writeCommand("// label return-address\n")
+	c.writeLabel(returnAddress)
 }
 
 func (c *codeWriter) writeReturn() {
