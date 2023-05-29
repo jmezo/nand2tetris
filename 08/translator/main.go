@@ -486,7 +486,7 @@ func (c *codeWriter) writeCall(functionName string, numArgs int) {
 	c.writeCommand(fmt.Sprintf(setARG, numArgs))
 	// LCL = SP
 	setLCL := "@SP\n" +
-		"D=A\n" +
+		"D=M\n" +
 		"@LCL\n" +
 		"M=D\n"
 	c.writeCommand("// LCL = SP\n")
